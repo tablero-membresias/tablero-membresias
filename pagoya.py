@@ -29,7 +29,7 @@ def _vista_solicitudes(d):
 
 def _detalle(titulo, d, key):
     with st.container(border=True):
-        st.markdown(f"**🔎 {titulo}: {c.fmt_num(len(d))} solicitudes · {c.fmt_dinero(d['valor'].sum())}**")
+        st.markdown(f"**{titulo}: {c.fmt_num(len(d))} solicitudes · {c.fmt_dinero(d['valor'].sum())}**")
         vista = _vista_solicitudes(d)
         st.dataframe(vista, hide_index=True, width="stretch", height=300,
                      column_config={"Valor": DINERO, "Comisión": DINERO, "IVA": DINERO})
@@ -37,7 +37,7 @@ def _detalle(titulo, d, key):
 
 
 def seccion_resumen(p):
-    c.titulo("💸 Resumen PagoYa", "Totales del periodo filtrado.")
+    c.titulo("Resumen PagoYa", "Totales del periodo filtrado.")
     paises = c.orden_paises(p["pais"].unique())
     for pais in paises:
         x = p[p["pais"] == pais]
@@ -58,7 +58,7 @@ def seccion_controles(p):
         "Black list": p["black_list"].fillna("").str.upper().str.startswith("SI"),
         "Cancelación > 70%": p["cancelacion"].fillna(0) > 0.7,
     }
-    c.titulo("🛡️ Controles de las solicitudes")
+    c.titulo("Controles de las solicitudes")
     k = st.columns(4)
     for i, (nombre, mascara) in enumerate(motivos.items()):
         k[i].metric(nombre, c.fmt_num(int(mascara.sum())))
@@ -75,7 +75,7 @@ def seccion_controles(p):
 
 
 def seccion_tendencia(x, pais):
-    c.titulo(f"📈 Tendencia semanal de recaudo · {pais}",
+    c.titulo(f"Tendencia semanal de recaudo · {pais}",
              "Barras: valor desembolsado (eje izquierdo) · Líneas: comisión e IVA (eje derecho). "
              "Haz clic en una semana para ver sus solicitudes.")
     sem = (x.groupby("semana").agg(valor=("valor", "sum"), comision=("comision", "sum"),
@@ -104,7 +104,7 @@ def seccion_tendencia(x, pais):
 def seccion_ciudad_vehiculo(x, pais):
     col1, col2 = st.columns([3, 2])
     with col1:
-        c.titulo(f"🏙️ Valor por ciudad · {pais}", "Haz clic en una barra para ver las solicitudes de esa ciudad.")
+        c.titulo(f"Valor por ciudad · {pais}", "Haz clic en una barra para ver las solicitudes de esa ciudad.")
         ciu = (x.groupby("ciudad").agg(valor=("valor", "sum"), solicitudes=("valor", "size"))
                 .reset_index().sort_values("valor").tail(12))
         fig = go.Figure(go.Bar(x=ciu["valor"], y=ciu["ciudad"], orientation="h", marker_color=c.AZUL,
@@ -115,7 +115,7 @@ def seccion_ciudad_vehiculo(x, pais):
         cd = c.punto_elegido(st.plotly_chart(fig, key="pg_ciudad", on_select="rerun", selection_mode="points"))
         ciudad = cd[0] if isinstance(cd, (list, tuple)) else cd
     with col2:
-        c.titulo(f"🛵 Por vehículo · {pais}", "Número de solicitudes.")
+        c.titulo(f"Por vehículo · {pais}", "Número de solicitudes.")
         veh = x["vehiculo"].fillna("Sin dato").value_counts()
         fig = go.Figure(go.Pie(labels=veh.index, values=veh.values, hole=0.55, sort=False,
                                marker=dict(colors=[c.ROSADO, c.AZUL, c.GRIS, c.ROJO, "#C9C9C9"])))
@@ -140,5 +140,5 @@ def mostrar(pagoya, f: c.Filtro):
     st.divider()
     seccion_ciudad_vehiculo(x, pais)
     st.divider()
-    c.titulo("📋 Todas las solicitudes del periodo")
+    c.titulo("Todas las solicitudes del periodo")
     c.boton_excel(_vista_solicitudes(p), "pagoya_solicitudes", key="xl_pg_todas")

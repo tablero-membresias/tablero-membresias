@@ -39,7 +39,7 @@ def _vista(d):
 
 def seccion_resumen(m, men):
     ultima = m["semana"].max()
-    c.titulo("🎟️ Resumen de membresías",
+    c.titulo("Resumen de membresías",
              f"Aliados y recaudo sin duplicar. Saldos y estados de la última semana del periodo: "
              f"{c.semana_corta(ultima)}.")
     paises = c.orden_paises(m["pais"].unique())
@@ -61,7 +61,7 @@ def seccion_resumen(m, men):
 
 
 def seccion_recaudo(men, pais):
-    c.titulo(f"💵 Recaudo estimado por mes · {pais}",
+    c.titulo(f"Recaudo estimado por mes · {pais}",
              "Barras: recaudo (cada aliado una vez por mes) · Línea: aliados con membresía ese mes.")
     r = men[men["pais"] == pais]
     mes = (r.groupby(["anio", "mes"]).agg(recaudo=("valor_plan", "sum"), aliados=("clave", "nunique"))
@@ -81,7 +81,7 @@ def seccion_recaudo(men, pais):
 
 
 def seccion_semanal(x, pais):
-    c.titulo(f"📈 Aliados activos por semana y estado del retiro · {pais}",
+    c.titulo(f"Aliados activos por semana y estado del retiro · {pais}",
              "Cada barra es una semana (un depósito). Haz clic en un color para ver esos aliados.")
     tabla = (x.assign(estado=x["estado_retiro"].fillna("Sin dato"))
               .groupby(["semana", "estado"])["clave"].nunique().unstack(fill_value=0).sort_index())
@@ -104,7 +104,7 @@ def seccion_semanal(x, pais):
         semana, estado = cd
         d = x[(x["semana"] == semana) & (x["estado_retiro"].fillna("Sin dato") == estado)]
         with st.container(border=True):
-            st.markdown(f"**🔎 {c.semana_corta(semana)} · {estado}: {c.fmt_num(len(d))} aliados**")
+            st.markdown(f"**{c.semana_corta(semana)} · {estado}: {c.fmt_num(len(d))} aliados**")
             vista = _vista(d)
             st.dataframe(vista, hide_index=True, width="stretch", height=300,
                          column_config={"Valor plan": DINERO, "Saldo actual": DINERO, "Disponible": DINERO})
@@ -114,14 +114,14 @@ def seccion_semanal(x, pais):
 def seccion_plan_ciudad(x, men, pais):
     col1, col2 = st.columns([2, 3])
     with col1:
-        c.titulo(f"🧾 Por plan · {pais}", "Aliados distintos según su último plan.")
+        c.titulo(f"Por plan · {pais}", "Aliados distintos según su último plan.")
         planes = (x.sort_values("semana").groupby("clave")["tipo_plan"].last()
                    .fillna("Sin plan").str.strip().value_counts())
         fig = go.Figure(go.Pie(labels=planes.index, values=planes.values, hole=0.55, sort=False,
                                marker=dict(colors=[c.AZUL, c.ROSADO, c.GRIS, c.ROJO])))
         st.plotly_chart(c.estilo(fig, 320), key="mb_plan")
     with col2:
-        c.titulo(f"🏙️ Por ciudad · {pais}", "Aliados distintos con membresía.")
+        c.titulo(f"Por ciudad · {pais}", "Aliados distintos con membresía.")
         ciu = x.groupby("ciudad")["clave"].nunique().sort_values().tail(10)
         fig = go.Figure(go.Bar(x=ciu.values, y=ciu.index, orientation="h", marker_color=c.ROSADO,
                                text=ciu.values, textposition="auto",
@@ -147,5 +147,5 @@ def mostrar(memb, f: c.Filtro):
     st.divider()
     seccion_plan_ciudad(x, men, pais)
     st.divider()
-    c.titulo("📋 Todos los registros de membresía del periodo")
+    c.titulo("Todos los registros de membresía del periodo")
     c.boton_excel(_vista(m), "membresias_periodo", key="xl_mb_todas")

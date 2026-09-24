@@ -3,6 +3,7 @@ app.py — Tablero Membresías & PagoYa
 Etapa 1: contraseña, conexión a Neon, pestaña "Cargar datos" e importación del histórico.
 Etapa 2: filtros (año, mes, país, ciudad) y pestaña "Aliados".
 Etapas 3 y 4: pestañas "PagoYa" y "Membresías".
+Etapa 5: colores de marca en botones y tarjetas, guía de uso y cerrar sesión.
 """
 
 import hmac
@@ -12,7 +13,7 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(page_title="Membresías & PagoYa", page_icon="📊", layout="wide",
-                   initial_sidebar_state="expanded")
+                   initial_sidebar_state="collapsed")
 
 import aliados            # noqa: E402
 import base_datos as bd   # noqa: E402
@@ -26,25 +27,55 @@ AZUL = "#3B82C4"
 
 st.markdown(f"""
 <style>
-  /* Encabezado grande con los colores de la marca */
-  .encabezado {{ border-left: 8px solid {ROSADO}; padding: 6px 0 6px 18px; margin: 0 0 18px 0; }}
-  .encabezado .titulo {{ font-size: 2.6rem !important; font-weight: 800; line-height: 1.1; }}
+  /* Encabezado */
+  .encabezado {{ border-left: 6px solid {ROSADO}; padding: 4px 0 4px 16px; margin: 0 0 6px 0; }}
+  .encabezado .titulo {{ font-size: 2.3rem !important; font-weight: 800; line-height: 1.1; }}
   .encabezado .r {{ color: {ROSADO}; }} .encabezado .a {{ color: {AZUL}; }}
-  .encabezado .sub {{ font-size: 1.05rem; opacity: .7; margin-top: 4px; }}
-  /* Pestañas grandes y visibles */
-  .stTabs [data-baseweb="tab-list"] {{ gap: 10px; }}
-  .stTabs [data-baseweb="tab"] {{ height: 52px; padding: 0 22px; border-radius: 10px 10px 0 0;
-                                 background: rgba(128,128,128,.10); }}
-  .stTabs [data-baseweb="tab"] p {{ font-size: 1.2rem !important; font-weight: 700; }}
-  .stTabs [aria-selected="true"] {{ background: {ROSADO} !important; }}
-  .stTabs [aria-selected="true"] p {{ color: #FFFFFF !important; }}
-  .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ROSADO} !important; }}
-  /* Tarjetas y títulos de país */
-  .tarjeta {{ border-left: 6px solid var(--c); background: rgba(128,128,128,.10); padding: 12px 16px;
+  .encabezado .sub {{ font-size: 1rem; opacity: .65; margin-top: 4px; }}
+
+  /* Navegación principal (pestañas) */
+  .st-key-nav [role="radiogroup"] {{ gap: 0 !important; width: 100%; flex-wrap: wrap;
+                                     border-bottom: 1px solid rgba(128,128,128,.35); }}
+  .st-key-nav [role="radiogroup"] label {{ margin: 0 !important; padding: 14px 30px 11px 30px;
+                                           border-bottom: 3px solid transparent; cursor: pointer; }}
+  .st-key-nav [role="radiogroup"] label > div:not(:has(p)) {{ display: none !important; }}
+  .st-key-nav [role="radiogroup"] label p {{ font-size: 1.3rem !important; font-weight: 600; opacity: .55; }}
+  .st-key-nav [role="radiogroup"] label:hover p {{ opacity: .9; }}
+  .st-key-nav [role="radiogroup"] label:has(input:checked) {{ border-bottom-color: {AZUL}; }}
+  .st-key-nav [role="radiogroup"] label:has(input:checked) p {{ opacity: 1; font-weight: 800; color: {AZUL}; }}
+
+  /* Barra de filtros compacta */
+  .st-key-barra_filtros {{ background: rgba(128,128,128,.06); border: 1px solid rgba(128,128,128,.22);
+                           border-radius: 12px; padding: 10px 16px 2px 16px; margin: 14px 0 4px 0; }}
+  .st-key-barra_filtros label p {{ font-size: .75rem !important; text-transform: uppercase;
+                                   letter-spacing: .07em; opacity: .65; }}
+  .estado-datos {{ font-size: .82rem; opacity: .7; line-height: 1.5; padding-top: 6px; }}
+
+  /* Indicadores en tarjetas, sin textos cortados */
+  [data-testid="stMetric"] {{ border: 1px solid rgba(128,128,128,.22); border-radius: 12px;
+                             padding: 12px 16px; background: rgba(128,128,128,.05); height: 100%; }}
+  [data-testid="stMetricLabel"] p {{ white-space: normal !important; font-size: .85rem !important; opacity: .75; }}
+  [data-testid="stMetricLabel"] div {{ overflow: visible !important; }}
+  [data-testid="stMetricValue"] {{ font-size: clamp(1.1rem, 1.5vw, 1.7rem) !important; }}
+  [data-testid="stMetricValue"] div {{ overflow: visible !important; text-overflow: clip !important; }}
+
+  /* Títulos de sección */
+  h4 {{ font-weight: 700 !important; border-bottom: 1px solid rgba(128,128,128,.25); padding-bottom: 6px; }}
+  .pais {{ font-weight: 700; font-size: .95rem; color: {AZUL}; margin: 12px 0 4px 0;
+           text-transform: uppercase; letter-spacing: .05em; }}
+
+  /* Botones */
+  [data-testid^="stBaseButton-primary"], button[kind^="primary"] {{
+      background-color: {ROSADO} !important; border-color: {ROSADO} !important; color: #FFFFFF !important; }}
+  [data-testid^="stBaseButton-primary"]:hover, button[kind^="primary"]:hover {{
+      background-color: #B8446A !important; border-color: #B8446A !important; }}
+  [data-testid="stDownloadButton"] button {{ border: 1.5px solid {AZUL} !important; color: {AZUL} !important; }}
+  [data-testid="stDownloadButton"] button:hover {{ background: {AZUL} !important; color: #FFFFFF !important; }}
+
+  /* Tarjetas de la pantalla de carga */
+  .tarjeta {{ border-left: 5px solid var(--c); background: rgba(128,128,128,.07); padding: 12px 16px;
              border-radius: 8px; margin-bottom: 8px; }}
   .tarjeta b {{ color: var(--c); letter-spacing: .5px; }}
-  .pais {{ font-weight: 800; font-size: 1.05rem; color: {AZUL}; margin: 10px 0 2px 0; }}
-  [data-testid="stMetricValue"] {{ font-size: 1.9rem; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -119,7 +150,13 @@ except Exception as e:
 # Encabezado y pestañas
 # ----------------------------------------------------------------------
 
-st.markdown(ENCABEZADO, unsafe_allow_html=True)
+col_titulo, col_salir = st.columns([6, 1], vertical_alignment="center")
+with col_titulo:
+    st.markdown(ENCABEZADO, unsafe_allow_html=True)
+with col_salir:
+    if st.button("Cerrar sesión", width="stretch"):
+        st.session_state.clear()
+        st.rerun()
 
 try:
     datos_pagoya = comun.cargar_pagoya()
@@ -130,40 +167,38 @@ except Exception as e:
     st.exception(e)
     st.stop()
 
-with st.sidebar:
-    st.markdown(f"<h2 style='margin-top:0'>🔎 Filtros</h2>", unsafe_allow_html=True)
-    st.caption("Aplican a las pestañas Aliados, PagoYa y Membresías.")
-    filtro = comun.dibujar_filtros(datos_pagoya, datos_memb)
-    st.divider()
-    ultimas = [s for s in (datos_pagoya["semana"].max() if not datos_pagoya.empty else None,
-                           datos_memb["semana"].max() if not datos_memb.empty else None) if s]
-    if ultimas:
-        st.caption(f"📅 Datos hasta la {lectores.etiqueta_semana(max(ultimas))}")
-    if fecha_corte is not None:
-        st.caption(f"💰 Saldos al {fmt_fecha(fecha_corte)}")
+PAGINAS = ["Aliados", "PagoYa", "Membresías", "Cargar datos"]
+with st.container(key="nav"):
+    pagina = st.radio("Sección", PAGINAS, horizontal=True, key="pagina", label_visibility="collapsed")
 
-tab_aliados, tab_pagoya, tab_memb, tab_cargar = st.tabs(
-    ["👥 Aliados", "💸 PagoYa", "🎟️ Membresías", "📤 Cargar datos"])
+if pagina != "Cargar datos":
+    with st.container(key="barra_filtros"):
+        cols = st.columns([1, 1, 1, 1.3, 1.6], vertical_alignment="center")
+        filtro = comun.dibujar_filtros(datos_pagoya, datos_memb, cols[:4])
+        ultimas = [s for s in (datos_pagoya["semana"].max() if not datos_pagoya.empty else None,
+                               datos_memb["semana"].max() if not datos_memb.empty else None) if s]
+        estado = []
+        if ultimas:
+            estado.append(f"Datos hasta la {lectores.etiqueta_semana(max(ultimas))}")
+        if fecha_corte is not None:
+            estado.append(f"Saldos al {fmt_fecha(fecha_corte)}")
+        cols[4].markdown(f'<div class="estado-datos">{"<br>".join(estado)}</div>', unsafe_allow_html=True)
 
 
-with tab_aliados:
+def pagina_segura(nombre, funcion, *args):
     try:
-        aliados.mostrar(datos_pagoya, datos_memb, datos_saldos, fecha_corte, filtro)
+        funcion(*args)
     except Exception as e:
-        st.error("Algo falló en la pestaña Aliados. Copia el detalle de abajo y pégaselo a Claude tal cual.")
+        st.error(f"Algo falló en la sección {nombre}. Copia el detalle de abajo y pégaselo a Claude tal cual.")
         st.exception(e)
-with tab_pagoya:
-    try:
-        pagoya.mostrar(datos_pagoya, filtro)
-    except Exception as e:
-        st.error("Algo falló en la pestaña PagoYa. Copia el detalle de abajo y pégaselo a Claude tal cual.")
-        st.exception(e)
-with tab_memb:
-    try:
-        membresias.mostrar(datos_memb, filtro)
-    except Exception as e:
-        st.error("Algo falló en la pestaña Membresías. Copia el detalle de abajo y pégaselo a Claude tal cual.")
-        st.exception(e)
+
+
+if pagina == "Aliados":
+    pagina_segura("Aliados", aliados.mostrar, datos_pagoya, datos_memb, datos_saldos, fecha_corte, filtro)
+elif pagina == "PagoYa":
+    pagina_segura("PagoYa", pagoya.mostrar, datos_pagoya, filtro)
+elif pagina == "Membresías":
+    pagina_segura("Membresías", membresias.mostrar, datos_memb, filtro)
 
 
 # ----------------------------------------------------------------------
@@ -226,7 +261,7 @@ def boton_guardar(tipo, funcion_guardar, *args, etiqueta="Guardar en el tablero"
         try:
             with st.spinner("Guardando en la base de datos..."):
                 funcion_guardar(*args)
-            st.session_state["mensaje_ok"] = "✅ Datos guardados. El tablero ya los incluye."
+            st.session_state["mensaje_ok"] = "Datos guardados. El tablero ya los incluye."
             reiniciar_uploader(tipo)
             st.rerun()
         except Exception as e:
@@ -238,10 +273,20 @@ def mostrar_avisos(res):
         st.warning(a)
 
 
-with tab_cargar:
+if pagina == "Cargar datos":
     if msg := st.session_state.pop("mensaje_ok", None):
         st.success(msg)
 
+    with st.expander("Cómo cargar los datos cada semana"):
+        st.markdown(
+            "1. **Membresías:** sube la Lista Oro de la semana. Revisa que la *fecha de depósito* sea el "
+            "día real (se toma del nombre del archivo, ej. `20260910_...`) y haz clic en **Guardar**.\n"
+            "2. **PagoYa:** sube el archivo *Consulta fraude* del mes (aunque sea el mismo mes de la semana "
+            "pasada: los retiros repetidos se reemplazan, no se duplican) y haz clic en **Guardar**.\n"
+            "3. **Saldos:** pon la *fecha de corte* del archivo, súbelo y haz clic en **Guardar**.\n"
+            "4. Revisa abajo en **Semanas cargadas** que aparezca la semana nueva.\n\n"
+            "Si sale un cuadro rojo, copia el mensaje completo y pégaselo a Claude tal cual. "
+            "Si llega un tipo de archivo nuevo o cambian las columnas, adjunta un ejemplo real.")
     st.subheader("Cargar archivos de la semana")
     st.caption("Sube cada Excel tal como lo recibes. Si subes un archivo que ya habías cargado, "
                "sus datos se reemplazan: nunca se duplican.")
@@ -326,7 +371,7 @@ with tab_cargar:
 
     # ---------- HISTÓRICO DEL HTML ----------
     st.divider()
-    with st.expander("📦 Importar el histórico de tu tablero HTML (se hace una sola vez)"):
+    with st.expander("Importar el histórico de tu tablero HTML (se hace una sola vez)"):
         try:
             if bd.historico_ya_importado():
                 st.success("El histórico del HTML ya está importado.")
@@ -365,7 +410,7 @@ with tab_cargar:
             vista["Valor"] = res["valor_total"].map(fmt_dinero)
         vista["Origen"] = res["origen"].str.replace("html", "histórico HTML").str.replace("archivo", "Excel")
         st.dataframe(vista, hide_index=True, width="stretch", height=min(35 * len(vista) + 38, 380))
-        with st.popover("🗑️ Eliminar una semana"):
+        with st.popover("Eliminar una semana"):
             opciones = dict(zip(vista["Semana"], res["semana"]))
             elegida = st.selectbox("Semana a eliminar", list(opciones), key=f"sel_borrar_{tipo}")
             seguro = st.checkbox("Sí, quiero eliminarla (no se puede deshacer)", key=f"ok_borrar_{tipo}")
@@ -394,7 +439,7 @@ with tab_cargar:
                 "Origen": sal["origen"].str.replace("html", "histórico HTML").str.replace("archivo", "Excel"),
             })
             st.dataframe(vista, hide_index=True, width="stretch")
-            with st.popover("🗑️ Eliminar una carga de saldos"):
+            with st.popover("Eliminar una carga de saldos"):
                 opciones = dict(zip(vista["Fecha de corte"], sal["fecha_corte"]))
                 elegida = st.selectbox("Carga a eliminar", list(opciones), key="sel_borrar_saldos")
                 seguro = st.checkbox("Sí, quiero eliminarla (no se puede deshacer)", key="ok_borrar_saldos")

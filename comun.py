@@ -145,18 +145,29 @@ class Filtro:
         return " · ".join(partes) if partes else "Todo el periodo · todos los países"
 
 
-def dibujar_filtros(pagoya, memb) -> Filtro:
+def _selector(col, etiqueta, opciones, key, **kw):
+    """Selector que recuerda su valor aunque cambies de sección."""
+    if key not in st.session_state:
+        st.session_state[key] = st.session_state.get(f"_{key}", opciones[0])
+    if st.session_state[key] not in opciones:
+        st.session_state[key] = opciones[0]
+    valor = col.selectbox(etiqueta, opciones, key=key, **kw)
+    st.session_state[f"_{key}"] = valor
+    return valor
+
+
+def dibujar_filtros(pagoya, memb, columnas) -> Filtro:
     periodos = pd.concat([pagoya[["anio", "mes", "pais", "ciudad"]],
                           memb[["anio", "mes", "pais", "ciudad"]]], ignore_index=True)
-    c1 = c2 = c3 = c4 = st   # uno debajo del otro (van en la barra lateral)
+    c1, c2, c3, c4 = columnas
     anios = sorted(periodos["anio"].dropna().unique().tolist(), reverse=True)
-    anio = c1.selectbox("Año", ["Todos"] + anios, key="f_anio")
+    anio = _selector(c1, "Año", ["Todos"] + anios, "f_anio")
     base = periodos if anio == "Todos" else periodos[periodos["anio"] == anio]
     meses = sorted(base["mes"].dropna().unique().tolist())
-    mes = c2.selectbox("Mes", ["Todos"] + meses, key="f_mes",
-                       format_func=lambda m: m if m == "Todos" else MESES[int(m) - 1])
+    mes = _selector(c2, "Mes", ["Todos"] + meses, "f_mes",
+                    format_func=lambda m: m if m == "Todos" else MESES[int(m) - 1])
     paises = orden_paises(periodos["pais"].dropna().unique().tolist())
-    pais = c3.selectbox("País", ["Todos"] + paises, key="f_pais")
+    pais = _selector(c3, "País", ["Todos"] + paises, "f_pais")
     base = periodos
     if anio != "Todos":
         base = base[base["anio"] == anio]
@@ -165,9 +176,7 @@ def dibujar_filtros(pagoya, memb) -> Filtro:
     if pais != "Todos":
         base = base[base["pais"] == pais]
     ciudades = sorted(base["ciudad"].dropna().unique().tolist())
-    if st.session_state.get("f_ciudad") not in (["Todas"] + ciudades):
-        st.session_state["f_ciudad"] = "Todas"
-    ciudad = c4.selectbox("Ciudad", ["Todas"] + ciudades, key="f_ciudad")
+    ciudad = _selector(c4, "Ciudad", ["Todas"] + ciudades, "f_ciudad")
     return Filtro(anio, mes, pais, ciudad)
 
 
@@ -216,9 +225,9 @@ def boton_excel(df: pd.DataFrame, nombre: str, key: str):
     archivo = f"{nombre}.xlsx"
     mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     if len(df) <= 3000 or st.session_state.get(f"prep_{key}"):
-        st.download_button(f"⬇️ Descargar Excel ({fmt_num(len(df))} filas)", _a_excel(df),
+        st.download_button(f"Descargar Excel ({fmt_num(len(df))} filas)", _a_excel(df),
                            file_name=archivo, mime=mime, key=key)
-    elif st.button(f"📦 Preparar Excel ({fmt_num(len(df))} filas)", key=f"btn_{key}"):
+    elif st.button(f"Preparar Excel ({fmt_num(len(df))} filas)", key=f"btn_{key}"):
         st.session_state[f"prep_{key}"] = True
         st.rerun()
 

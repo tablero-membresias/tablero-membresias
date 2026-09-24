@@ -86,7 +86,7 @@ def detalle_aliado(clave, p, m, s):
     sa = s[s["clave"] == clave] if not s.empty else s
     nombre = next((d["nombre"].iloc[0] for d in (pa, ma, sa) if not d.empty), "Aliado")
     with st.container(border=True):
-        st.markdown(f"**🔎 Detalle: {nombre}**")
+        st.markdown(f"**Detalle: {nombre}**")
         k1, k2, k3 = st.columns(3)
         k1.metric("Solicitudes PagoYa (periodo)", c.fmt_num(len(pa)))
         k2.metric("Retirado (periodo)", c.fmt_dinero(pa["valor"].sum()) if not pa.empty else "—")
@@ -114,7 +114,7 @@ def detalle_aliado(clave, p, m, s):
 # ----------------------------------------------------------------------
 
 def seccion_indicadores(acum):
-    _titulo("📊 Indicadores de retiro", "Acumulado de todas las semanas del periodo filtrado.")
+    _titulo("Indicadores de retiro", "Acumulado de todas las semanas del periodo filtrado.")
     paises = c.orden_paises(acum["pais"].unique())
     for pais in paises:
         a = acum[acum["pais"] == pais]
@@ -132,7 +132,7 @@ def seccion_indicadores(acum):
 
 
 def seccion_tendencia(p):
-    _titulo("📈 Tendencia semanal",
+    _titulo("Tendencia semanal",
             "Barras: solicitudes · Línea: aliados distintos que retiraron. "
             "Haz clic en una semana para ver sus solicitudes.")
     sem = (p.groupby("semana")
@@ -157,7 +157,7 @@ def seccion_tendencia(p):
         if semana:
             d = p[p["semana"] == semana].sort_values("valor", ascending=False)
             with st.container(border=True):
-                st.markdown(f"**🔎 {c.semana_corta(semana)}: {c.fmt_num(len(d))} solicitudes de "
+                st.markdown(f"**{c.semana_corta(semana)}: {c.fmt_num(len(d))} solicitudes de "
                             f"{c.fmt_num(d['clave'].nunique())} aliados**")
                 vista = pd.DataFrame({"Fecha": d["fecha"], "Aliado": d["nombre"], "Ciudad": d["ciudad"],
                                       "País": d["pais"], "Valor": d["valor"], "Comisión": d["comision"]})
@@ -167,9 +167,9 @@ def seccion_tendencia(p):
 
 
 def seccion_saldos(s, fecha_corte, acum, p, m):
-    _titulo("💰 Saldo pendiente por pagar a los aliados")
+    _titulo("Saldo pendiente por pagar a los aliados")
     if s.empty:
-        st.info("Aún no hay archivo de saldos. Súbelo en la pestaña 📤 Cargar datos.")
+        st.info("Aún no hay archivo de saldos. Súbelo en la sección Cargar datos.")
         return
     st.caption(f"Saldos del último corte ({c.fmt_fecha(fecha_corte)}), cruzados aliado por aliado con lo "
                "retirado en PagoYa durante el periodo filtrado.")
@@ -203,7 +203,7 @@ def seccion_saldos(s, fecha_corte, acum, p, m):
         "Retirado acumulado": orden["retirado"].round(0),
     })
     st.caption("Mayores saldos pendientes. Haz clic en una fila para ver el detalle del aliado. "
-               "Usa la lupa 🔍 de la tabla para buscar un nombre.")
+               "Usa la lupa de la tabla para buscar un nombre.")
     elegido = _tabla_seleccionable(vista.head(300), "al_tabla_saldos",
                                    {"Saldo (deuda)": DINERO, "Retirado acumulado": DINERO,
                                     "Solicitudes PagoYa": ENTERO}, alto=320)
@@ -213,7 +213,7 @@ def seccion_saldos(s, fecha_corte, acum, p, m):
 
 
 def seccion_ranking(acum, p, m, s):
-    _titulo("🏆 Ranking acumulado PagoYa", "Aliados ordenados por valor total retirado en el periodo. "
+    _titulo("Ranking acumulado PagoYa", "Aliados ordenados por valor total retirado en el periodo. "
                                           "Haz clic en una fila para ver el detalle.")
     orden = acum.sort_values("valor", ascending=False)
     vista = pd.DataFrame({
@@ -229,7 +229,7 @@ def seccion_ranking(acum, p, m, s):
 
 
 def seccion_recurrentes(acum, p, m, s):
-    _titulo("🔁 Aliados más recurrentes", "Los 15 aliados con más solicitudes. Haz clic en una barra para ver el detalle.")
+    _titulo("Aliados más recurrentes", "Los 15 aliados con más solicitudes. Haz clic en una barra para ver el detalle.")
     top = acum.sort_values(["solicitudes", "valor"], ascending=False).head(15).iloc[::-1]
     etiquetas = top["nombre"] + " · " + top["ciudad"]
     fig = go.Figure(go.Bar(
@@ -250,7 +250,7 @@ def seccion_recurrentes(acum, p, m, s):
 def seccion_fraude(acum, p, m, s):
     alerta = acum[(acum["solicitudes"] >= 3) & (acum["montos_distintos"] == 1)] \
         .sort_values(["solicitudes", "valor"], ascending=False)
-    _titulo(f"🚨 Alerta de fraude: siempre el mismo monto ({c.fmt_num(len(alerta))})",
+    _titulo(f"Alerta de fraude: siempre el mismo monto ({c.fmt_num(len(alerta))})",
             "Aliados con 3 o más solicitudes en el periodo, todas exactamente por el mismo valor.")
     if alerta.empty:
         st.success("No se detectaron aliados con montos idénticos repetidos.")
@@ -271,7 +271,7 @@ def seccion_fraude(acum, p, m, s):
 
 def seccion_bloqueos(m, p, s):
     b = bloqueos_recurrentes(m)
-    _titulo(f"⛔ Bloqueos recurrentes en membresía ({c.fmt_num(len(b))})",
+    _titulo(f"Bloqueos recurrentes en membresía ({c.fmt_num(len(b))})",
             "Aliados con 'Fondos insuficientes' en el estado de retiro en 2 o más semanas del periodo.")
     if m.empty:
         st.info("No hay datos de Membresías para este filtro.")
