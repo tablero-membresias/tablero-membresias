@@ -1,6 +1,7 @@
 """
 app.py — Tablero Membresías & PagoYa
 Etapa 1: contraseña, conexión a Neon, pestaña "Cargar datos" e importación del histórico.
+Etapa 2: filtros (año, mes, país, ciudad) y pestaña "Aliados".
 """
 
 import hmac
@@ -11,7 +12,9 @@ import streamlit as st
 
 st.set_page_config(page_title="Membresías & PagoYa", page_icon="📊", layout="wide")
 
+import aliados            # noqa: E402
 import base_datos as bd   # noqa: E402
+import comun              # noqa: E402
 import lectores           # noqa: E402
 
 ROSADO = "#D6537E"
@@ -99,6 +102,19 @@ except Exception as e:
 st.markdown('<p class="titulo"><span class="r">Membresías</span> & <span class="a">PagoYa</span></p>'
             '<p class="sub">Torre de control semanal · Colombia y México</p>', unsafe_allow_html=True)
 
+try:
+    datos_pagoya = comun.cargar_pagoya()
+    datos_memb = comun.cargar_membresias()
+    datos_saldos, fecha_corte = comun.cargar_saldos_ultimo()
+except Exception as e:
+    st.error("No pude leer los datos guardados. Copia el detalle de abajo y pégaselo a Claude.")
+    st.exception(e)
+    st.stop()
+
+with st.container(border=True):
+    st.markdown("**🔎 Filtros** · aplican a las pestañas Aliados, PagoYa y Membresías")
+    filtro = comun.dibujar_filtros(datos_pagoya, datos_memb)
+
 tab_aliados, tab_pagoya, tab_memb, tab_cargar = st.tabs(
     ["👥 Aliados", "💸 PagoYa", "🎟️ Membresías", "📤 Cargar datos"])
 
@@ -115,7 +131,11 @@ def aviso_proxima_etapa(etapa, tipo_resumen, texto_conteo):
 
 
 with tab_aliados:
-    aviso_proxima_etapa(2, "pagoya", "Solicitudes PagoYa guardadas")
+    try:
+        aliados.mostrar(datos_pagoya, datos_memb, datos_saldos, fecha_corte, filtro)
+    except Exception as e:
+        st.error("Algo falló en la pestaña Aliados. Copia el detalle de abajo y pégaselo a Claude tal cual.")
+        st.exception(e)
 with tab_pagoya:
     aviso_proxima_etapa(3, "pagoya", "Solicitudes PagoYa guardadas")
 with tab_memb:
