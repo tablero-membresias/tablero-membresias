@@ -2,6 +2,7 @@
 app.py — Tablero Membresías & PagoYa
 Etapa 1: contraseña, conexión a Neon, pestaña "Cargar datos" e importación del histórico.
 Etapa 2: filtros (año, mes, país, ciudad) y pestaña "Aliados".
+Etapas 3 y 4: pestañas "PagoYa" y "Membresías".
 """
 
 import hmac
@@ -10,25 +11,40 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Membresías & PagoYa", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Membresías & PagoYa", page_icon="📊", layout="wide",
+                   initial_sidebar_state="expanded")
 
 import aliados            # noqa: E402
 import base_datos as bd   # noqa: E402
 import comun              # noqa: E402
 import lectores           # noqa: E402
+import membresias         # noqa: E402
+import pagoya             # noqa: E402
 
 ROSADO = "#D6537E"
 AZUL = "#3B82C4"
 
 st.markdown(f"""
 <style>
-  .titulo {{ font-size: 2rem; font-weight: 800; margin-bottom: 0; }}
-  .titulo .r {{ color: {ROSADO}; }} .titulo .a {{ color: {AZUL}; }}
-  .sub {{ color: #6B7280; margin-top: 0; }}
-  .tarjeta {{ border-left: 6px solid var(--c); background: #F6F8FB; padding: 12px 16px;
+  /* Encabezado grande con los colores de la marca */
+  .encabezado {{ border-left: 8px solid {ROSADO}; padding: 6px 0 6px 18px; margin: 0 0 18px 0; }}
+  .encabezado .titulo {{ font-size: 2.6rem !important; font-weight: 800; line-height: 1.1; }}
+  .encabezado .r {{ color: {ROSADO}; }} .encabezado .a {{ color: {AZUL}; }}
+  .encabezado .sub {{ font-size: 1.05rem; opacity: .7; margin-top: 4px; }}
+  /* Pestañas grandes y visibles */
+  .stTabs [data-baseweb="tab-list"] {{ gap: 10px; }}
+  .stTabs [data-baseweb="tab"] {{ height: 52px; padding: 0 22px; border-radius: 10px 10px 0 0;
+                                 background: rgba(128,128,128,.10); }}
+  .stTabs [data-baseweb="tab"] p {{ font-size: 1.2rem !important; font-weight: 700; }}
+  .stTabs [aria-selected="true"] {{ background: {ROSADO} !important; }}
+  .stTabs [aria-selected="true"] p {{ color: #FFFFFF !important; }}
+  .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ROSADO} !important; }}
+  /* Tarjetas y títulos de país */
+  .tarjeta {{ border-left: 6px solid var(--c); background: rgba(128,128,128,.10); padding: 12px 16px;
              border-radius: 8px; margin-bottom: 8px; }}
   .tarjeta b {{ color: var(--c); letter-spacing: .5px; }}
-  .stTabs [aria-selected="true"] {{ color: {ROSADO} !important; }}
+  .pais {{ font-weight: 800; font-size: 1.05rem; color: {AZUL}; margin: 10px 0 2px 0; }}
+  [data-testid="stMetricValue"] {{ font-size: 1.9rem; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -55,6 +71,11 @@ def fmt_fecha(d):
     return f"{d.day} {lectores.MESES_CORTOS[d.month - 1]} {d.year}"
 
 
+ENCABEZADO = ('<div class="encabezado"><div class="titulo"><span class="r">Membresías</span> &amp; '
+              '<span class="a">PagoYa</span></div><div class="sub">Torre de control semanal · '
+              'Colombia y México</div></div>')
+
+
 # ----------------------------------------------------------------------
 # Contraseña
 # ----------------------------------------------------------------------
@@ -62,8 +83,7 @@ def fmt_fecha(d):
 def pedir_contrasena():
     if st.session_state.get("autenticado"):
         return True
-    st.markdown('<p class="titulo"><span class="r">Membresías</span> & <span class="a">PagoYa</span></p>',
-                unsafe_allow_html=True)
+    st.markdown(ENCABEZADO, unsafe_allow_html=True)
     if "APP_PASSWORD" not in st.secrets:
         st.error("Falta configurar APP_PASSWORD en los Secrets de Streamlit.")
         return False
@@ -99,8 +119,7 @@ except Exception as e:
 # Encabezado y pestañas
 # ----------------------------------------------------------------------
 
-st.markdown('<p class="titulo"><span class="r">Membresías</span> & <span class="a">PagoYa</span></p>'
-            '<p class="sub">Torre de control semanal · Colombia y México</p>', unsafe_allow_html=True)
+st.markdown(ENCABEZADO, unsafe_allow_html=True)
 
 try:
     datos_pagoya = comun.cargar_pagoya()
@@ -111,23 +130,20 @@ except Exception as e:
     st.exception(e)
     st.stop()
 
-with st.container(border=True):
-    st.markdown("**🔎 Filtros** · aplican a las pestañas Aliados, PagoYa y Membresías")
+with st.sidebar:
+    st.markdown(f"<h2 style='margin-top:0'>🔎 Filtros</h2>", unsafe_allow_html=True)
+    st.caption("Aplican a las pestañas Aliados, PagoYa y Membresías.")
     filtro = comun.dibujar_filtros(datos_pagoya, datos_memb)
+    st.divider()
+    ultimas = [s for s in (datos_pagoya["semana"].max() if not datos_pagoya.empty else None,
+                           datos_memb["semana"].max() if not datos_memb.empty else None) if s]
+    if ultimas:
+        st.caption(f"📅 Datos hasta la {lectores.etiqueta_semana(max(ultimas))}")
+    if fecha_corte is not None:
+        st.caption(f"💰 Saldos al {fmt_fecha(fecha_corte)}")
 
 tab_aliados, tab_pagoya, tab_memb, tab_cargar = st.tabs(
     ["👥 Aliados", "💸 PagoYa", "🎟️ Membresías", "📤 Cargar datos"])
-
-
-def aviso_proxima_etapa(etapa, tipo_resumen, texto_conteo):
-    st.info(f"Esta pestaña se construye en la **Etapa {etapa}**. Por ahora puedes confirmar "
-            "aquí que los datos están guardados.")
-    try:
-        res = bd.resumen_cargas(tipo_resumen)
-        total = int(res["registros"].sum()) if "registros" in res else int(res["aliados"].sum())
-        st.metric(texto_conteo, fmt_num(total), help=f"{len(res)} semanas guardadas")
-    except Exception as e:
-        st.exception(e)
 
 
 with tab_aliados:
@@ -137,9 +153,17 @@ with tab_aliados:
         st.error("Algo falló en la pestaña Aliados. Copia el detalle de abajo y pégaselo a Claude tal cual.")
         st.exception(e)
 with tab_pagoya:
-    aviso_proxima_etapa(3, "pagoya", "Solicitudes PagoYa guardadas")
+    try:
+        pagoya.mostrar(datos_pagoya, filtro)
+    except Exception as e:
+        st.error("Algo falló en la pestaña PagoYa. Copia el detalle de abajo y pégaselo a Claude tal cual.")
+        st.exception(e)
 with tab_memb:
-    aviso_proxima_etapa(4, "membresias", "Registros de Membresías guardados")
+    try:
+        membresias.mostrar(datos_memb, filtro)
+    except Exception as e:
+        st.error("Algo falló en la pestaña Membresías. Copia el detalle de abajo y pégaselo a Claude tal cual.")
+        st.exception(e)
 
 
 # ----------------------------------------------------------------------

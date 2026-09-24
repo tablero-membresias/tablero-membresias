@@ -23,7 +23,8 @@ ROJO = "#B23A2E"
 MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
          "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 MONEDA = {"Colombia": "COP", "México": "MXN"}
-BANDERA = {"Colombia": "🇨🇴", "México": "🇲🇽"}
+COLORES_ESTADO = {"Retiro Aprobado": AZUL, "Fondos insuficientes": ROSADO,
+                  "Pagoya": GRIS, "Aliado bloqueado": ROJO}
 
 
 # ----------------------------------------------------------------------
@@ -147,7 +148,7 @@ class Filtro:
 def dibujar_filtros(pagoya, memb) -> Filtro:
     periodos = pd.concat([pagoya[["anio", "mes", "pais", "ciudad"]],
                           memb[["anio", "mes", "pais", "ciudad"]]], ignore_index=True)
-    c1, c2, c3, c4 = st.columns(4)
+    c1 = c2 = c3 = c4 = st   # uno debajo del otro (van en la barra lateral)
     anios = sorted(periodos["anio"].dropna().unique().tolist(), reverse=True)
     anio = c1.selectbox("Año", ["Todos"] + anios, key="f_anio")
     base = periodos if anio == "Todos" else periodos[periodos["anio"] == anio]
@@ -222,5 +223,36 @@ def boton_excel(df: pd.DataFrame, nombre: str, key: str):
         st.rerun()
 
 
-def tarjeta(col, titulo, valor, ayuda=None):
-    col.metric(titulo, valor, help=ayuda)
+def titulo(texto, ayuda=None):
+    st.markdown(f"#### {texto}")
+    if ayuda:
+        st.caption(ayuda)
+
+
+def encabezado_pais(pais, varios):
+    if varios:
+        st.markdown(f'<div class="pais">{pais} · cifras en {MONEDA.get(pais, "moneda local")}</div>',
+                    unsafe_allow_html=True)
+
+
+def elegir_pais_grafico(df, f, key):
+    """Los gráficos de dinero muestran un país a la vez (COP y MXN no se pueden sumar)."""
+    paises = orden_paises(df["pais"].unique())
+    if f.pais != "Todos" or len(paises) == 1:
+        return paises[0]
+    return st.radio("País del gráfico", paises, horizontal=True, key=key,
+                    help="Los valores de Colombia (COP) y México (MXN) no se mezclan en un mismo gráfico.")
+
+
+def estilo(fig, alto=360):
+    fig.update_layout(height=alto, margin=dict(l=10, r=10, t=10, b=10),
+                      legend=dict(orientation="h", y=1.12, x=0), font=dict(size=13))
+    return fig
+
+
+def punto_elegido(ev):
+    """customdata del punto clicado en un gráfico (o None)."""
+    puntos = ev.selection.points if ev and ev.selection else []
+    if not puntos:
+        return None
+    return puntos[0].get("customdata")

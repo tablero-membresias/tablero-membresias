@@ -64,8 +64,7 @@ def _titulo(texto, ayuda=None):
 
 
 def _encabezado_pais(pais, varios):
-    if varios:
-        st.markdown(f"**{c.BANDERA.get(pais, '🌎')} {pais}** · cifras en {c.MONEDA.get(pais, 'moneda local')}")
+    c.encabezado_pais(pais, varios)
 
 
 def _tabla_seleccionable(vista: pd.DataFrame, key: str, config: dict, alto=None):
