@@ -8,11 +8,14 @@ Etapa 5: colores de marca en botones y tarjetas, guía de uso y cerrar sesión.
 
 import hmac
 from datetime import date
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Membresías & PagoYa", page_icon="📊", layout="wide",
+ICONO = Path(__file__).parent / "icono.png"
+st.set_page_config(page_title="Membresías & PagoYa", page_icon=str(ICONO) if ICONO.exists() else "📊",
+                   layout="wide",
                    initial_sidebar_state="collapsed")
 
 import aliados            # noqa: E402
@@ -27,6 +30,10 @@ AZUL = "#3B82C4"
 
 st.markdown(f"""
 <style>
+  /* Ocultar la barra de íconos de Streamlit (Share, estrella, GitHub, menú en inglés) */
+  [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"] {{ display: none !important; }}
+  [data-testid="stMainBlockContainer"], .block-container {{ padding-top: 1.6rem !important; }}
+
   /* Barra superior: nombre a la izquierda, menú a la derecha */
   .st-key-barra_superior {{ border-bottom: 1px solid rgba(128,128,128,.28); padding: 4px 0 10px 0; margin-bottom: 4px; }}
   .logo {{ font-size: 1.75rem; font-weight: 800; line-height: 1.1; white-space: nowrap; }}
@@ -39,9 +46,6 @@ st.markdown(f"""
   [class*="st-key-nav_"] button:hover p {{ color: {AZUL} !important; }}
   [class*="st-key-nav_"][class*="_on"] button {{ border-bottom: 2px solid {AZUL} !important; }}
   [class*="st-key-nav_"][class*="_on"] button p {{ color: {AZUL} !important; font-weight: 700; }}
-  .st-key-salir button {{ background: #1F2937 !important; border: 1px solid rgba(255,255,255,.25) !important;
-                          border-radius: 6px !important; }}
-  .st-key-salir button p {{ color: #FFFFFF !important; font-weight: 600; }}
   .encabezado .titulo {{ font-size: 2.2rem; font-weight: 800; }}
   .encabezado .r {{ color: {ROSADO}; }} .encabezado .a {{ color: {AZUL}; }}
   .encabezado .sub {{ opacity: .65; margin-bottom: 16px; }}
@@ -123,8 +127,14 @@ def pedir_contrasena():
     with st.form("entrar"):
         clave = st.text_input("Contraseña", type="password")
         if st.form_submit_button("Entrar", type="primary"):
-            if hmac.compare_digest(clave, str(st.secrets["APP_PASSWORD"])):
+            clave_admin = str(st.secrets.get("ADMIN_PASSWORD", ""))
+            if clave_admin and hmac.compare_digest(clave, clave_admin):
+                st.session_state.autenticado, st.session_state.rol = True, "admin"
+                st.rerun()
+            elif hmac.compare_digest(clave, str(st.secrets["APP_PASSWORD"])):
+                # Si aún no existe ADMIN_PASSWORD, la clave general sigue pudiendo cargar datos.
                 st.session_state.autenticado = True
+                st.session_state.rol = "lector" if clave_admin else "admin"
                 st.rerun()
             else:
                 st.error("Contraseña incorrecta.")
@@ -161,7 +171,8 @@ except Exception as e:
     st.exception(e)
     st.stop()
 
-PAGINAS = ["Aliados", "PagoYa", "Membresías", "Cargar datos"]
+ES_ADMIN = st.session_state.get("rol") == "admin"
+PAGINAS = ["Aliados", "PagoYa", "Membresías"] + (["Cargar datos"] if ES_ADMIN else [])
 if st.session_state.get("pagina") not in PAGINAS:
     st.session_state["pagina"] = PAGINAS[0]
 
@@ -171,17 +182,13 @@ with st.container(key="barra_superior"):
                       '<span class="sub">Torre de control semanal · Colombia y México</span></div>',
                       unsafe_allow_html=True)
     with col_menu:
-        cols_menu = st.columns([1, 1, 1.15, 1.25, 1.25], vertical_alignment="center")
+        cols_menu = st.columns([1, 1, 1.15, 1.25], vertical_alignment="center")
         for i, nombre in enumerate(PAGINAS):
             estado_nav = "on" if st.session_state["pagina"] == nombre else "off"
             with cols_menu[i].container(key=f"nav_{i}_{estado_nav}"):
                 if st.button(nombre, key=f"boton_nav_{i}", width="stretch"):
                     st.session_state["pagina"] = nombre
                     st.rerun()
-        with cols_menu[4].container(key="salir"):
-            if st.button("Cerrar sesión", key="boton_salir", width="stretch"):
-                st.session_state.clear()
-                st.rerun()
 
 pagina = st.session_state["pagina"]
 
@@ -287,7 +294,10 @@ def mostrar_avisos(res):
         st.warning(a)
 
 
-if pagina == "Cargar datos":
+if pagina == "Cargar datos" and ES_ADMIN:
+    if "ADMIN_PASSWORD" not in st.secrets:
+        st.warning("Todavía no configuraste ADMIN_PASSWORD en los Secrets. Mientras no exista, cualquiera "
+                   "con la contraseña general puede cargar y borrar datos.")
     if msg := st.session_state.pop("mensaje_ok", None):
         st.success(msg)
 
