@@ -66,7 +66,9 @@ st.markdown(f"""
   [data-testid="stMetricValue"] div {{ overflow: visible !important; text-overflow: clip !important; }}
 
   /* Títulos de sección */
-  h4 {{ font-weight: 700 !important; border-bottom: 1px solid rgba(128,128,128,.25); padding-bottom: 6px; }}
+  .titulo-seccion {{ font-size: 1.45rem; font-weight: 700; border-bottom: 1px solid rgba(128,128,128,.25);
+                     padding-bottom: 6px; margin: 18px 0 6px 0; }}
+  [data-testid="stHeaderActionElements"] {{ display: none !important; }}
   .pais {{ font-weight: 700; font-size: .95rem; color: {AZUL}; margin: 12px 0 4px 0;
            text-transform: uppercase; letter-spacing: .05em; }}
 
@@ -83,7 +85,7 @@ st.markdown(f"""
   [data-testid="stFileUploaderDropzone"] button {{ font-size: 0 !important; }}
   [data-testid="stFileUploaderDropzone"] button * {{ display: none !important; }}
   [data-testid="stFileUploaderDropzone"] button::after {{ content: "Seleccionar archivo"; font-size: 1rem; }}
-  [data-testid="stFileUploaderDropzone"]::after {{ content: "o arrástralo aquí · máximo 200 MB";
+  [data-testid="stFileUploaderDropzone"]::after {{ content: "o arrástralo aquí · archivos Excel";
       font-size: .85rem; opacity: .6; margin-left: 12px; }}
 
   /* Tarjetas de la pantalla de carga */
@@ -316,7 +318,7 @@ if pagina == "Cargar datos" and ES_ADMIN:
             "4. Revisa abajo en **Semanas cargadas** que aparezca la semana nueva.\n\n"
             "Si sale un cuadro rojo, copia el mensaje completo y pégaselo a Claude tal cual. "
             "Si llega un tipo de archivo nuevo o cambian las columnas, adjunta un ejemplo real.")
-    st.subheader("Cargar archivos de la semana")
+    st.subheader("Cargar archivos de la semana", anchor=False)
     st.caption("Sube cada Excel tal como lo recibes. Si subes un archivo que ya habías cargado, "
                "sus datos se reemplazan: nunca se duplican.")
 
@@ -423,7 +425,7 @@ if pagina == "Cargar datos" and ES_ADMIN:
 
     # ---------- SEMANAS CARGADAS ----------
     st.divider()
-    st.subheader("Semanas cargadas")
+    st.subheader("Semanas cargadas", anchor=False)
 
     def lista_semanas(tipo, titulo, con_valor=False):
         st.markdown(f"**{titulo}**")

@@ -58,7 +58,7 @@ def bloqueos_recurrentes(m: pd.DataFrame) -> pd.DataFrame:
 # ----------------------------------------------------------------------
 
 def _titulo(texto, ayuda=None):
-    st.markdown(f"#### {texto}")
+    st.markdown(f'<div class="titulo-seccion">{texto}</div>', unsafe_allow_html=True)
     if ayuda:
         st.caption(ayuda)
 

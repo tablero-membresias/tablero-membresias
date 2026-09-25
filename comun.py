@@ -233,7 +233,7 @@ def boton_excel(df: pd.DataFrame, nombre: str, key: str):
 
 
 def titulo(texto, ayuda=None):
-    st.markdown(f"#### {texto}")
+    st.markdown(f'<div class="titulo-seccion">{texto}</div>', unsafe_allow_html=True)
     if ayuda:
         st.caption(ayuda)
 
