@@ -30,9 +30,11 @@ AZUL = "#3B82C4"
 
 st.markdown(f"""
 <style>
-  /* Ocultar la barra de íconos de Streamlit (Share, estrella, GitHub, menú en inglés) */
-  [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"] {{ display: none !important; }}
-  [data-testid="stMainBlockContainer"], .block-container {{ padding-top: 1.6rem !important; }}
+  /* Ocultar los íconos de Streamlit (Share, estrella, lápiz, GitHub). Se deja solo el menú ⋮
+     para elegir fondo claro u oscuro. */
+  [data-testid="stToolbarActions"], [data-testid="stDecoration"] {{ display: none !important; }}
+  [data-testid="stHeader"] {{ background: transparent !important; }}
+  [data-testid="stMainBlockContainer"], .block-container {{ padding-top: 2.6rem !important; }}
 
   /* Barra superior: nombre a la izquierda, menú a la derecha */
   .st-key-barra_superior {{ border-bottom: 1px solid rgba(128,128,128,.28); padding: 4px 0 10px 0; margin-bottom: 4px; }}
