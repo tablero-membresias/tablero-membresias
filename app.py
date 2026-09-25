@@ -27,22 +27,24 @@ AZUL = "#3B82C4"
 
 st.markdown(f"""
 <style>
-  /* Encabezado */
-  .encabezado {{ border-left: 6px solid {ROSADO}; padding: 4px 0 4px 16px; margin: 0 0 6px 0; }}
-  .encabezado .titulo {{ font-size: 2.3rem !important; font-weight: 800; line-height: 1.1; }}
+  /* Barra superior: nombre a la izquierda, menú a la derecha */
+  .st-key-barra_superior {{ border-bottom: 1px solid rgba(128,128,128,.28); padding: 4px 0 10px 0; margin-bottom: 4px; }}
+  .logo {{ font-size: 1.75rem; font-weight: 800; line-height: 1.1; white-space: nowrap; }}
+  .logo .r {{ color: {ROSADO}; }} .logo .a {{ color: {AZUL}; }}
+  .logo .sub {{ display: block; font-size: .82rem; font-weight: 500; opacity: .6; margin-top: 2px; }}
+  [class*="st-key-nav_"] button {{ background: transparent !important; border: none !important;
+                                   box-shadow: none !important; border-radius: 0 !important;
+                                   border-bottom: 2px solid transparent !important; padding: 6px 4px !important; }}
+  [class*="st-key-nav_"] button p {{ font-size: 1.08rem !important; font-weight: 500; }}
+  [class*="st-key-nav_"] button:hover p {{ color: {AZUL} !important; }}
+  [class*="st-key-nav_"][class*="_on"] button {{ border-bottom: 2px solid {AZUL} !important; }}
+  [class*="st-key-nav_"][class*="_on"] button p {{ color: {AZUL} !important; font-weight: 700; }}
+  .st-key-salir button {{ background: #1F2937 !important; border: 1px solid rgba(255,255,255,.25) !important;
+                          border-radius: 6px !important; }}
+  .st-key-salir button p {{ color: #FFFFFF !important; font-weight: 600; }}
+  .encabezado .titulo {{ font-size: 2.2rem; font-weight: 800; }}
   .encabezado .r {{ color: {ROSADO}; }} .encabezado .a {{ color: {AZUL}; }}
-  .encabezado .sub {{ font-size: 1rem; opacity: .65; margin-top: 4px; }}
-
-  /* Navegación principal (pestañas) */
-  .st-key-nav [role="radiogroup"] {{ gap: 0 !important; width: 100%; flex-wrap: wrap;
-                                     border-bottom: 1px solid rgba(128,128,128,.35); }}
-  .st-key-nav [role="radiogroup"] label {{ margin: 0 !important; padding: 14px 30px 11px 30px;
-                                           border-bottom: 3px solid transparent; cursor: pointer; }}
-  .st-key-nav [role="radiogroup"] label > div:not(:has(p)) {{ display: none !important; }}
-  .st-key-nav [role="radiogroup"] label p {{ font-size: 1.3rem !important; font-weight: 600; opacity: .55; }}
-  .st-key-nav [role="radiogroup"] label:hover p {{ opacity: .9; }}
-  .st-key-nav [role="radiogroup"] label:has(input:checked) {{ border-bottom-color: {AZUL}; }}
-  .st-key-nav [role="radiogroup"] label:has(input:checked) p {{ opacity: 1; font-weight: 800; color: {AZUL}; }}
+  .encabezado .sub {{ opacity: .65; margin-bottom: 16px; }}
 
   /* Barra de filtros compacta */
   .st-key-barra_filtros {{ background: rgba(128,128,128,.06); border: 1px solid rgba(128,128,128,.22);
@@ -150,14 +152,6 @@ except Exception as e:
 # Encabezado y pestañas
 # ----------------------------------------------------------------------
 
-col_titulo, col_salir = st.columns([6, 1], vertical_alignment="center")
-with col_titulo:
-    st.markdown(ENCABEZADO, unsafe_allow_html=True)
-with col_salir:
-    if st.button("Cerrar sesión", width="stretch"):
-        st.session_state.clear()
-        st.rerun()
-
 try:
     datos_pagoya = comun.cargar_pagoya()
     datos_memb = comun.cargar_membresias()
@@ -168,8 +162,28 @@ except Exception as e:
     st.stop()
 
 PAGINAS = ["Aliados", "PagoYa", "Membresías", "Cargar datos"]
-with st.container(key="nav"):
-    pagina = st.radio("Sección", PAGINAS, horizontal=True, key="pagina", label_visibility="collapsed")
+if st.session_state.get("pagina") not in PAGINAS:
+    st.session_state["pagina"] = PAGINAS[0]
+
+with st.container(key="barra_superior"):
+    col_logo, col_menu = st.columns([2.3, 5], vertical_alignment="center")
+    col_logo.markdown('<div class="logo"><span class="r">Membresías</span> &amp; <span class="a">PagoYa</span>'
+                      '<span class="sub">Torre de control semanal · Colombia y México</span></div>',
+                      unsafe_allow_html=True)
+    with col_menu:
+        cols_menu = st.columns([1, 1, 1.15, 1.25, 1.25], vertical_alignment="center")
+        for i, nombre in enumerate(PAGINAS):
+            estado_nav = "on" if st.session_state["pagina"] == nombre else "off"
+            with cols_menu[i].container(key=f"nav_{i}_{estado_nav}"):
+                if st.button(nombre, key=f"boton_nav_{i}", width="stretch"):
+                    st.session_state["pagina"] = nombre
+                    st.rerun()
+        with cols_menu[4].container(key="salir"):
+            if st.button("Cerrar sesión", key="boton_salir", width="stretch"):
+                st.session_state.clear()
+                st.rerun()
+
+pagina = st.session_state["pagina"]
 
 if pagina != "Cargar datos":
     with st.container(key="barra_filtros"):
